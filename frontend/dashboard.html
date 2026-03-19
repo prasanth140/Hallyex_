@@ -78,6 +78,12 @@
                 <p style="color: var(--text-muted);">Manage your rural land applications</p>
             </div>
             <div style="display: flex; gap: 1rem; align-items: center;">
+                <div style="position: relative;">
+                    <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                    <input type="text" id="searchInput" placeholder="Search Survey/Village..." 
+                           style="padding: 0.8rem 1rem 0.8rem 2.8rem; background: var(--card); border: 1px solid var(--border); border-radius: 50px; color: white; outline: none; width: 250px;"
+                           onkeyup="searchApps()">
+                </div>
                 <button class="apply-btn" onclick="openModal()"><i class="fas fa-plus"></i> New Application</button>
             </div>
         </div>
@@ -241,9 +247,9 @@
         function searchApps() {
             const q = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allApps.filter(a => 
-                a._id.toLowerCase().includes(q) || 
-                a.survey_number.toLowerCase().includes(q) ||
-                a.village.toLowerCase().includes(q)
+                (a._id && a._id.toLowerCase().includes(q)) || 
+                (a.survey_number && a.survey_number.toLowerCase().includes(q)) ||
+                (a.village && a.village.toLowerCase().includes(q))
             );
             renderApps(filtered);
         }

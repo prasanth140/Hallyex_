@@ -45,8 +45,8 @@
         .charts-container { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: -1rem; }
         .chart-card { background: var(--card); padding: 1.5rem; border-radius: 24px; border: 1px solid var(--border); width: 340px; display: flex; flex-direction: column; align-items: center; }
         .chart-card h3 { margin-bottom: 2rem; font-size: 1rem; color: var(--text-muted); width: 100%; text-align: center; font-weight: 500; }
-        .circle-wrap { width: 220px; height: 220px; position: relative; display: flex; align-items: center; justify-content: center; }
-        canvas { width: 100% !important; height: 100% !important; }
+        .circle-wrap { width: 100%; height: 220px; position: relative; display: flex; align-items: center; justify-content: center; }
+        canvas { display: block; max-width: 100%; max-height: 100%; }
 
         /* Tables & Lists */
         .list-section { margin-top: 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
@@ -183,7 +183,12 @@
                     data: {
                         labels: ['Completed', 'Pending VAO', 'Survey Stage', 'Final Review'],
                         datasets: [{
-                            data: [stats.completed, stats.pending, stats.survey, stats.vao],
+                            data: [
+                                stats.completed || 0, 
+                                stats.pending || 0, 
+                                stats.survey || 0, 
+                                stats.vao || 0
+                            ],
                             backgroundColor: ['#10b981', '#ef4444', '#6366f1', '#f59e0b'],
                             borderWidth: 2,
                             borderColor: '#161e2d'
@@ -203,7 +208,7 @@
                     data: {
                         labels: ['North', 'South', 'East', 'West'],
                         datasets: [{
-                            data: [40, 30, 20, 10],
+                            data: [40, 30, 20, 10], // Static demo data
                             backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#3b82f6'],
                             borderWidth: 0
                         }]

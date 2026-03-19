@@ -20,15 +20,6 @@ app.get('/', (req, res) => {
 });
 
 // MEMORY STORAGE (Temporary for Hackathon - resets on server restart)
-let users = [
-    { name: "Admin User", email: "admin@gmail.com", password: "", role: "admin" } // Password hashed below
-];
-
-// Hash initial admin password
-(async () => {
-    users[0].password = await bcrypt.hash("admin123", 10);
-})();
-
 let applications = [];
 let workflows = [{
     name: 'Rural Patta Flow',
@@ -40,31 +31,29 @@ let workflows = [{
 }];
 
 // Auth Endpoints
-app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { name, email, password, role } = req.body;
-        const exists = users.find(u => u.email === email);
-        if (exists) return res.status(400).json({ error: 'Email already exists' });
-        
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = { name, email, password: hashedPassword, role: role || 'citizen' };
-        users.push(newUser);
-        res.status(201).json({ message: 'User created' });
-    } catch (err) {
-        console.error('Registration Error:', err);
-        res.status(500).json({ error: 'Registration failed' });
-    }
+app.post('/api/auth/register', (req, res) => {
+    // Return success without saving anything
+    res.status(201).json({ message: 'Success! You can now log in.' });
 });
 
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = users.find(u => u.email === email);
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+        
+        // Hardcoded Admin & Officer
+        if (email === "admin@gmail.com" && password === "admin123") {
+            const token = jwt.sign({ id: email, role: 'admin', name: "Admin" }, JWT_SECRET);
+            return res.json({ token, role: 'admin', name: "Admin" });
         }
-        const token = jwt.sign({ id: user.email, role: user.role, name: user.name }, JWT_SECRET);
-        res.json({ token, role: user.role, name: user.name });
+        if (email === "officer@gmail.com" && password === "officer123") {
+            const token = jwt.sign({ id: email, role: 'officer', name: "Official Officer" }, JWT_SECRET);
+            return res.json({ token, role: 'officer', name: "Official Officer" });
+        }
+
+        // Allow ALL other email/passwords to log in as 'citizen'
+        const token = jwt.sign({ id: email, role: 'citizen', name: email.split('@')[0] }, JWT_SECRET);
+        res.json({ token, role: 'citizen', name: email.split('@')[0] });
+
     } catch (err) {
         console.error('Login Error:', err);
         res.status(500).json({ error: 'Server error' });
@@ -72,7 +61,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Application API
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', (req, res) => {
     const total = applications.length;
     const completed = applications.filter(a => a.status === 'completed').length;
     const pending = applications.filter(a => a.status === 'pending').length;
@@ -89,7 +78,7 @@ app.get('/api/applications', (req, res) => {
 
 app.post('/api/applications', (req, res) => {
     const newApp = {
-        id: Date.now().toString(),
+        _id: Date.now().toString(),
         ...req.body,
         remarks: "Awaiting primary verification by VAO",
         document_name: req.body.document_name || "Original_Deed_Scan.pdf",
@@ -101,7 +90,7 @@ app.post('/api/applications', (req, res) => {
 
     // --- Start Automated Simulation ---
     setTimeout(() => {
-        const a = applications.find(x => x.id === newApp.id);
+        const a = applications.find(x => x._id === newApp._id);
         if(a) {
             a.status = 'vao_verified';
             a.remarks = "VAO: Digital document verification automated. No disputes found.";
@@ -110,7 +99,7 @@ app.post('/api/applications', (req, res) => {
     }, 5000);
 
     setTimeout(() => {
-        const a = applications.find(x => x.id === newApp.id);
+        const a = applications.find(x => x._id === newApp._id);
         if(a) {
             a.status = 'surveyor_inspection';
             a.remarks = "Surveyor: Field boundary digitized via Satellite mapping.";
@@ -119,7 +108,7 @@ app.post('/api/applications', (req, res) => {
     }, 15000);
 
     setTimeout(() => {
-        const a = applications.find(x => x.id === newApp.id);
+        const a = applications.find(x => x._id === newApp._id);
         if(a) {
             a.status = 'tahsildar_approval';
             a.remarks = "Tahsildar: Case forwarded for final signature.";
@@ -131,7 +120,7 @@ app.post('/api/applications', (req, res) => {
 });
 
 app.post('/api/applications/:id/approve', (req, res) => {
-    const app = applications.find(a => a.id === req.params.id);
+    const app = applications.find(a => a._id === req.params.id);
     if (!app) return res.status(404).json({ error: 'Not found' });
     
     const officerRef = req.body.officer_name || "Official Approver 🧑‍💼";
@@ -149,7 +138,7 @@ app.post('/api/applications/:id/approve', (req, res) => {
         const currentIdx = stages.indexOf(app.status);
         if (currentIdx < stages.length - 1) {
             app.status = stages[currentIdx + 1];
-            app.remarks = `Level ${currentIdx + 1} Success: ${officerRemarks}`;
+            app.remarks = `Level ${currentIdx+1} Success: ${officerRemarks}`;
         }
     }
 
@@ -174,6 +163,6 @@ app.post('/api/workflow', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port http://localhost:${PORT}`));
 
 module.exports = app;

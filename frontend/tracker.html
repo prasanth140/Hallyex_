@@ -178,20 +178,23 @@
         let currentAppId = urlParams.get('id');
 
         async function handleSearch() {
-            const query = document.getElementById('globalSearch').value.trim();
+            const query = document.getElementById('globalSearch').value.trim().toLowerCase();
             if(!query) return;
 
             try {
                 const res = await fetch(`${API_URL}/applications`);
                 const apps = await res.json();
-                const found = apps.find(a => a.survey_number === query || a._id.includes(query));
+                const found = apps.find(a => 
+                    (a.survey_number && a.survey_number.toLowerCase() === query) || 
+                    (a._id && a._id.toLowerCase().includes(query))
+                );
                 
                 if (found) {
                     currentAppId = found._id;
                     window.history.pushState({}, '', `?id=${found._id}`);
                     loadTrackingData();
                 } else {
-                    alert('No application matching this Survey Number found.');
+                    alert('No application matching this Survey Number or ID found.');
                 }
             } catch (err) { alert('Search failed'); }
         }
