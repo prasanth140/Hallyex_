@@ -53,6 +53,44 @@ const applicationSchema = new mongoose.Schema({
 }, { timestamps: true });
 const Application = mongoose.model('Application', applicationSchema);
 
+const workflowSchema = new mongoose.Schema({
+  name: { type: String, default: 'Rural Patta Flow' },
+  steps: [String],
+  rules: [{
+    priority: Number,
+    condition: String,
+    target: String
+  }]
+}, { timestamps: true });
+const Workflow = mongoose.model('Workflow', workflowSchema);
+
+// Workflow API
+app.get('/api/workflow', async (req, res) => {
+  try {
+    let wf = await Workflow.findOne().sort({ createdAt: -1 });
+    if (!wf) {
+      // Default initial workflow
+      wf = new Workflow({
+        rules: [
+          { priority: 1, condition: 'application.land_area > 5', target: 'Special Surveyor' },
+          { priority: 2, condition: 'DEFAULT', target: 'Standard Surveyor' }
+        ]
+      });
+    }
+    res.json(wf);
+  } catch (err) { res.status(500).json(err); }
+});
+
+app.post('/api/workflow', async (req, res) => {
+  try {
+    const { name, rules } = req.body;
+    const wf = new Workflow({ name, rules });
+    await wf.save();
+    console.log(`✅ Workflow Published: ${wf.name}`);
+    res.status(201).json(wf);
+  } catch (err) { res.status(500).json(err); }
+});
+
 // Auth Endpoints
 app.post('/api/auth/register', async (req, res) => {
   try {
@@ -188,3 +226,5 @@ mongoose.connect(MONGO_URI)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port http://localhost:${PORT}`));
+
+module.exports = app;

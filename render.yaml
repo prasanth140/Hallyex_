@@ -1,0 +1,17 @@
+# Render Blueprint for Hackathon SIET Application
+services:
+  - type: web
+    name: hackathon-siet
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGO_URI
+        sync: false # Requires user input in Render's dashboard
+      - key: JWT_SECRET
+        generateValue: true # Generates a random secure secret automatically
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000

@@ -50,6 +50,17 @@
         .btn-outline { background: transparent; border: 1px solid var(--border); color: white; }
 
         .drag-handle { cursor: grab; color: var(--text-muted); margin-right: 10px; }
+
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 1.5rem 3rem; 
+            background: rgba(15, 23, 42, 0.5); 
+            backdrop-filter: blur(10px); 
+            border-bottom: 1px solid var(--border); 
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
@@ -73,7 +84,7 @@
             <h3><i class="fas fa-microchip"></i> Workflow Designer</h3>
             <div style="display: flex; gap: 1rem;">
                 <button class="btn btn-outline" onclick="location.href='/officer-dashboard.html'">Back</button>
-                <button class="btn btn-primary"><i class="fas fa-save"></i> Publish Flow</button>
+                <button class="btn btn-primary" onclick="publishFlow()"><i class="fas fa-save"></i> Publish Flow</button>
             </div>
         </header>
 
@@ -103,7 +114,7 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <h3>Routing Rules (Rule Engine)</h3>
-                    <button class="btn btn-outline"><i class="fas fa-plus"></i> New Rule</button>
+                    <button class="btn btn-outline" onclick="addNewRule()"><i class="fas fa-plus"></i> New Rule</button>
                 </div>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Rules are evaluated in priority order. If a citizen's application matches the condition, the flow moves to the defined Next Step.</p>
                 
@@ -121,13 +132,19 @@
                             <td>1</td>
                             <td><span class="condition-block">application.land_area > 5</span></td>
                             <td><i class="fas fa-level-down-alt fa-rotate-270" style="color: var(--primary);"></i> Special Surveyor</td>
-                            <td><i class="fas fa-edit" style="cursor: pointer;"></i></td>
+                            <td>
+                                <i class="fas fa-edit" style="cursor: pointer; margin-right: 10px;" onclick="editRule(this)"></i>
+                                <i class="fas fa-trash" style="cursor: pointer; color: #ef4444;" onclick="this.closest('tr').remove()"></i>
+                            </td>
                         </tr>
                         <tr>
                             <td>2</td>
                             <td><span class="condition-block">DEFAULT</span></td>
                             <td><i class="fas fa-level-down-alt fa-rotate-270" style="color: var(--primary);"></i> Standard Surveyor</td>
-                            <td><i class="fas fa-edit" style="cursor: pointer;"></i></td>
+                            <td>
+                                <i class="fas fa-edit" style="cursor: pointer; margin-right: 10px;" onclick="editRule(this)"></i>
+                                <i class="fas fa-trash" style="cursor: pointer; color: #ef4444;" onclick="this.closest('tr').remove()"></i>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -160,6 +177,90 @@
             localStorage.clear();
             window.location.href = '/login.html';
         };
+
+        function editRule(icon) {
+            const row = icon.closest('tr');
+            const conditionSpan = row.querySelector('.condition-block');
+            const targetTd = row.cells[2];
+            
+            const newCondition = prompt('Edit JS expression:', conditionSpan.innerText);
+            const newTarget = prompt('Edit Next Step Target:', targetTd.innerText.trim());
+            
+            if (newCondition) conditionSpan.innerText = newCondition;
+            if (newTarget) targetTd.innerHTML = `<i class="fas fa-level-down-alt fa-rotate-270" style="color: var(--primary);"></i> ${newTarget}`;
+        }
+
+        function addNewRule() {
+            const table = document.querySelector('.rule-table tbody');
+            const priority = table.rows.length + 1;
+            const newRow = table.insertRow();
+
+            // Simplified rule creation for hackathon demo
+            const condition = prompt('Enter JS expression (e.g. application.area > 10):', 'application.value > 0');
+            const target = prompt('Enter Next Step Target:', 'District Collector Review');
+
+            if (!condition || !target) return;
+
+            newRow.innerHTML = `
+                <td>${priority}</td>
+                <td><span class="condition-block">${condition}</span></td>
+                <td><i class="fas fa-level-down-alt fa-rotate-270" style="color: var(--primary);"></i> ${target}</td>
+                <td>
+                    <i class="fas fa-edit" style="cursor: pointer; margin-right: 10px;" onclick="editRule(this)"></i>
+                    <i class="fas fa-trash" style="cursor: pointer; color: #ef4444;" onclick="this.closest('tr').remove()"></i>
+                </td>
+            `;
+        }
+        async function publishFlow() {
+            const btn = document.querySelector('.btn-primary');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+
+            const rows = document.querySelectorAll('.rule-table tbody tr');
+            const rules = Array.from(rows).map((row, index) => ({
+                priority: index + 1,
+                condition: row.querySelector('.condition-block').innerText,
+                target: row.cells[2].innerText.trim()
+            }));
+
+            try {
+                const res = await fetch('/api/workflow', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: 'Rural Patta Flow', rules })
+                });
+                if (res.ok) {
+                    alert('✅ Workflow Published! The Rule Engine has been updated in the cloud.');
+                }
+            } catch (err) { alert('Server communication error'); }
+            btn.innerHTML = originalText;
+        }
+
+        async function loadWorkflow() {
+            try {
+                const res = await fetch('/api/workflow');
+                const wf = await res.json();
+                if (wf && wf.rules && wf.rules.length > 0) {
+                    const tbody = document.querySelector('.rule-table tbody');
+                    tbody.innerHTML = '';
+                    wf.rules.forEach(r => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${r.priority}</td>
+                            <td><span class="condition-block">${r.condition}</span></td>
+                            <td><i class="fas fa-level-down-alt fa-rotate-270" style="color: var(--primary);"></i> ${r.target}</td>
+                            <td>
+                                <i class="fas fa-edit" style="cursor: pointer; margin-right: 10px;" onclick="editRule(this)"></i>
+                                <i class="fas fa-trash" style="cursor: pointer; color: #ef4444;" onclick="this.closest('tr').remove()"></i>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (err) { console.log('Using local UI state'); }
+        }
+
+        window.onload = loadWorkflow;
     </script>
 </body>
 </html>

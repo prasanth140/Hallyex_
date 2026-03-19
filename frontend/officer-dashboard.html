@@ -170,7 +170,7 @@
         // Auth Protection
         const token = localStorage.getItem('token');
         const role = localStorage.getItem('role');
-        if (!token || role !== 'officer') {
+        if (!token || (role !== 'officer' && role !== 'admin')) {
             window.location.href = '/login.html';
         }
 
