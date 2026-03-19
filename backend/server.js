@@ -100,7 +100,8 @@ app.post('/api/auth/register', async (req, res) => {
     await user.save();
     res.status(201).json({ message: 'User created' });
   } catch (err) {
-    res.status(400).json({ error: 'Email already exists' });
+    console.error('Registration Error:', err);
+    res.status(400).json({ error: err.message || 'Registration failed' });
   }
 });
 
@@ -114,7 +115,8 @@ app.post('/api/auth/login', async (req, res) => {
     const token = jwt.sign({ id: user._id, role: user.role, name: user.name }, JWT_SECRET);
     res.json({ token, role: user.role, name: user.name });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Login Error:', err);
+    res.status(500).json({ error: err.message || 'Server error' });
   }
 });
 
