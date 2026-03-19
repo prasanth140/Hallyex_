@@ -21,7 +21,7 @@ app.get('/', (req, res) => {
 
 // MEMORY STORAGE (Temporary for Hackathon - resets on server restart)
 let users = [
-    { name: "Admin User", email: "admin@example.com", password: "", role: "admin" } // Password hashed below
+    { name: "Admin User", email: "admin@gmail.com", password: "", role: "admin" } // Password hashed below
 ];
 
 // Hash initial admin password
